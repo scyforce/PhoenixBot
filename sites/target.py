@@ -100,6 +100,7 @@ class Target:
     def monitor(self):
         self.in_stock = False
         self.browser.get(self.product)
+        print (self.product)
         wait(self.browser, self.TIMEOUT_LONG).until(lambda _: self.browser.current_url == self.product)
 
         while not self.img_found:
@@ -124,6 +125,13 @@ class Target:
 
     def atc_and_checkout(self):
         while not self.did_submit:
+            #select quantity
+            quantityButton = '//button[@data-test="custom-quantity-picker"]'
+            wait(self.browser, 10).until(EC.presence_of_element_located((By.XPATH, quantityButton)))
+            self.find_and_click(quantityButton)
+            quantityThreeOption = '//*[@id="options"]/li[3]'
+            wait(self.browser, 10).until(EC.presence_of_element_located((By.XPATH, quantityThreeOption)))
+            self.find_and_click(quantityThreeOption)
             for xpath_step in self.xpath_sequence:
                 for attempt in range(self.retry_attempts + 1):
                     try:

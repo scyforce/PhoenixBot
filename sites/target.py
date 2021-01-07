@@ -67,7 +67,7 @@ class Target:
         self.fill_and_authenticate()
 
         # Gives it time for the login to complete
-        time.sleep(random_delay(self.monitor_delay, settings.random_delay_start, settings.random_delay_stop))
+        time.sleep(random_delay(3, settings.random_delay_start, settings.random_delay_stop))
 
     def fill_and_authenticate(self):
         if self.browser.find_elements_by_id('username'):
@@ -88,7 +88,23 @@ class Target:
             new_window = [x for x in self.browser.window_handles if x not in windows_before][0]
             self.browser.switch_to_window(new_window)
         if len(self.browser.find_elements_by_xpath('//button[@data-test="orderPickupButton"]')) > 0 or len(self.browser.find_elements_by_xpath('//button[@data-test="shipItButton"]')) > 0:
-            stock = True
+            #select quantity
+            quantityButton = '//button[@data-test="custom-quantity-picker"]'
+            wait(self.browser, 15).until(EC.presence_of_element_located((By.XPATH, quantityButton)))
+            self.find_and_click(quantityButton)
+            quantityThreeOption = '//*[@id="options"]/li[3]'
+            wait(self.browser, 15).until(EC.presence_of_element_located((By.XPATH, quantityThreeOption)))
+            self.find_and_click(quantityThreeOption)
+            wait(self.browser, 15).until(EC.presence_of_element_located((By.XPATH, '//button[@data-test="shipItButton"]')))
+            button = self.browser.find_element_by_xpath('//button[@data-test="shipItButton"]')
+            if button:
+                self.browser.execute_script("return arguments[0].scrollIntoView(true);", button)
+                button.click()
+                try:
+                    wait(self.browser, 10).until(EC.text_to_be_present_in_element((By.XPATH, '//div[@data-test="errorContent"]/h2'), 'Item not added to your cart. Something went wrong, please try again.'))
+                except:
+                    stock = True
+                stock = False
         if new_tab:
             self.browser.close()
             wait(self.browser, 10).until(EC.number_of_windows_to_be(1))
@@ -125,17 +141,10 @@ class Target:
 
     def atc_and_checkout(self):
         while not self.did_submit:
-            #select quantity
-            quantityButton = '//button[@data-test="custom-quantity-picker"]'
-            wait(self.browser, 10).until(EC.presence_of_element_located((By.XPATH, quantityButton)))
-            self.find_and_click(quantityButton)
-            quantityThreeOption = '//*[@id="options"]/li[3]'
-            wait(self.browser, 10).until(EC.presence_of_element_located((By.XPATH, quantityThreeOption)))
-            self.find_and_click(quantityThreeOption)
             for xpath_step in self.xpath_sequence:
                 for attempt in range(self.retry_attempts + 1):
                     try:
-                        wait(self.browser, 10).until(EC.presence_of_element_located((By.XPATH, xpath_step['path'])))
+                        wait(self.browser, 5).until(EC.presence_of_element_located((By.XPATH, xpath_step['path'])))
                         self.process_step(xpath_step)
                         break
                     except:
